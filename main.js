@@ -12,16 +12,38 @@ class Block {
     this.data = data;
     this.previousHash = previousHash;
     this.hash = this.calculateHash();
+    this.nonce = 0;
   }
 
   calculateHash() {
-    return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data)).toString();
+    return SHA256(
+      this.index +
+      this.previousHash +
+      this.timestamp +
+      JSON.stringify(this.data) +
+      this.nonce).toString();
+  }
+
+  mineBlock(difficulty) {
+    // run the hashing function until we find a string which starts with some amount of zeros
+    // adjusted by the difficulty
+    console.log(`Mining block: ${this.index} ...`);
+
+    console.log(this.hash);
+    while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join('0')) {
+      // console.log(this.hash);
+      this.nonce++;
+      this.hash = this.calculateHash();
+    }
+
+    console.log(`Block mined: ${this.hash}`);
   }
 }
 
 class Blockchain {
   constructor() {
     this.chain = [this.createGenesisBlock()];
+    this.difficulty = 4;
   }
 
   createGenesisBlock() {
@@ -34,13 +56,28 @@ class Blockchain {
 
   addBlock(newBlock) {
     newBlock.previousHash = this.getLatestBlock().hash;
-    newBlock.hash = newBlock.calculateHash();
+    newBlock.mineBlock(this.difficulty);
     this.chain.push(newBlock);
+  }
+
+  isChainValid() {
+    for (let i = 1; i < this.chain.length; i++) {
+      const previousBlock = this.chain[i - 1];
+      const currentBlock = this.chain[i];
+
+      if (currentBlock.hash !== currentBlock.calculateHash()) {
+        return false;
+      }
+
+      if (currentBlock.previousHash !== previousBlock.hash) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
 
 let simpleCoin = new Blockchain();
 simpleCoin.addBlock(new Block(1, '10/01/2022', { amount: 4 }));
-simpleCoin.addBlock(new Block(1, '20/01/2022', { amount: 4 }));
-
-console.log(JSON.stringify(simpleCoin, null, 4));
+simpleCoin.addBlock(new Block(2, '20/01/2022', { amount: 8 }));
